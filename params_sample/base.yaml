@@ -1,5 +1,5 @@
 # Intel LiDAR 断面図化 - 共通デフォルトパラメータ
-# データセット固有の params/{folder_name}.yaml で上書き可能
+# データセット固有の params/<case>.yaml で上書き可能（params は params_sample のコピー）
 
 # 断面抽出
 cross_section:

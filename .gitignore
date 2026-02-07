@@ -2,6 +2,9 @@
 context.md
 create_venv.sh
 
+# ===== Params（params_sample をコピーしてユーザーが編集するため追跡しない） =====
+params/
+
 # ===== Data (Colab/学生は各自で用意 or アップロード) =====
 data/
 
