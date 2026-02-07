@@ -1,0 +1,61 @@
+# Intel LiDAR 断面図化 - 共通デフォルトパラメータ
+# データセット固有の params/{folder_name}.yaml で上書き可能
+
+# 断面抽出
+cross_section:
+  threshold: 0.005
+  z_range: [-1.05, -0.75]
+  start_index: 0
+  end_index_max: 5000
+
+# 共通グリッド
+common_grid:
+  x_min: 0.0
+  x_max: null  # null の場合は断面直線の長さから自動設定 (mm)
+  x_points: 500
+
+# 前処理 (preprocess_lidar_profile)
+filter:
+  dx: null
+  uneven_tol: 0.01
+  median_k: 5
+  sg_window: 21
+  sg_poly: 3
+  interp_method: linear
+
+# 地面抽出ROI (Noneの場合は全点を使用)
+ground:
+  z_range: [-1.6, -1.4]
+  xy_range: null
+  distance_threshold: 0.001
+  ransac_n: 3
+  num_iterations: 1000
+
+# 図化パラメータ
+plot:
+  legend_names:
+    - Initial
+    - "5 minutes"
+    - "10 minutes"
+    - "15 minutes"
+    - "20 minutes "
+    - "25 minutes "
+    - "30 minutes "
+    - "35 minutes "
+    - "40 minutes "
+    - Last-1
+    - Last
+  zoom_width: 220
+  revetment_shift_mm: 0
+  xlim: null
+  ylim_displacement: null
+  ylim_difference: null
+  x_start_from_zero: true
+  show_zoom: true
+  ylim_difference_zoom: [-100, 10]
+  ylim_displacement_zoom: [-860, -750]
+  graph_size_ratio: [4, 6]
+
+# 3D可視化の範囲 [m] ((x_min, x_max), (y_min, y_max), (z_min, z_max))
+plot_3d:
+  range: [[-1.5, 1.5], [-1.0, 1.5], [-2.0, 0.0]]

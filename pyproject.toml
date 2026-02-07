@@ -1,0 +1,25 @@
+[project]
+name = "lidar-section"
+version = "0.1.0"
+description = "Intel LiDAR 点群から断面プロファイルを抽出し差分を可視化する"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+
+dependencies = [
+    # コア（src で直接使用）
+    "numpy>=2.0,<3",
+    "scipy>=1.10",
+    "matplotlib>=3.8",
+    "PyYAML>=6",
+    # Jupyter（Notebook 実行用）
+    "notebook>=7",
+    "ipykernel>=6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "nbformat>=5.10",
+]
+
+[tool.uv]
+managed = true
