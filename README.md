@@ -71,8 +71,9 @@ PLY 読み込み → 地面で鉛直補正 → 断面抽出 → プロファイ�
 - 依存: numpy, scipy, matplotlib, PyYAML
 
 ```bash
-# ローカル（Jupyter 用）
-uv sync --extra notebook
+pip install numpy scipy matplotlib PyYAML
+# Jupyter 用（ローカル）
+pip install notebook ipykernel
 ```
 
-Colab では上記不要。
+Colab では既存パッケージで動作（不要に応じて `!pip install PyYAML` のみ）。
