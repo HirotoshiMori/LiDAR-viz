@@ -112,7 +112,7 @@ plot:
   #   title: 全体タイトル（initial_section の suptitle）
   #   label: 軸ラベル
   font:
-    legend: 12
+    legend: 10
     title: 14
     label: 12
 
@@ -123,7 +123,7 @@ plot:
   line:
     main: 2
     aux: 1
-    data: 5
+    data: 1.5
 
 # ---------------------------------------------------------------------------
 # 3D可視化 (plot_3d) — 初期断面図の表示範囲
