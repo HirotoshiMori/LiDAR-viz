@@ -28,7 +28,11 @@ def plot_section_differences(
     ylim_displacement_zoom: Optional[Tuple[float, float]] = None,
     graph_size_ratio: Optional[Tuple[float, float]] = None,
     title_prefix: str = "",
-    x_zero_zoom: Optional[float] = None
+    x_zero_zoom: Optional[float] = None,
+    figure_base_width: float = 9.0,
+    font_legend: float = 8,
+    font_label: float = 10,
+    line_width_data: float = 1.5,
 ) -> List[plt.Figure]:
     """
     断面の計測値（新しいxyz軸での変換値）と差分を可視化する。
@@ -95,13 +99,12 @@ def plot_section_differences(
     # 計測値のグラフを表示するかどうか
     show_displacements = all_displacements is not None and len(all_displacements) > 0
     
-    # グラフのサイズの縦横比を計算（各グラフのサイズを4:6にする）
+    # グラフのサイズの縦横比を計算（figure_base_width と graph_size_ratio から高さを算出）
+    single_graph_width = figure_base_width
     if graph_size_ratio is not None:
-        single_graph_width = 9.0
         single_graph_height = single_graph_width * graph_size_ratio[1] / graph_size_ratio[0]
     else:
-        single_graph_width = 9.0
-        single_graph_height = 13.5
+        single_graph_height = single_graph_width * 13.5 / 9.0
 
     def figsize_for_aspect(x_range: float, y_range: float) -> Tuple[float, float]:
         """データの縦横比（1:1）に合わせてFigureサイズを計算し、上下の余白を抑える"""
@@ -129,10 +132,10 @@ def plot_section_differences(
         
         for idx, data in enumerate(all_before_resample):
             label = ply_names[idx] if ply_names is not None else f"Section {idx}"
-            ax_before_resample.plot(plot_x, data, label=label, color=colors[idx], alpha=0.7)
+            ax_before_resample.plot(plot_x, data, label=label, color=colors[idx], alpha=0.7, linewidth=line_width_data)
         
-        ax_before_resample.set_xlabel(xlabel)
-        ax_before_resample.set_ylabel(ylabel_displacement)
+        ax_before_resample.set_xlabel(xlabel, fontsize=font_label)
+        ax_before_resample.set_ylabel(ylabel_displacement, fontsize=font_label)
         ax_before_resample.set_title(with_prefix("Before Resampling (Original Profile) - Full Range"))
         if xlim is not None:
             ax_before_resample.set_xlim(xlim)
@@ -141,7 +144,7 @@ def plot_section_differences(
         # データ座標での縦横比を1:1に設定
         ax_before_resample.set_aspect('equal')
         ax_before_resample.grid(True, alpha=0.3)
-        ax_before_resample.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
+        ax_before_resample.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=font_legend)
         plt.tight_layout()
         figures.append(fig_before_resample)
     
@@ -155,10 +158,10 @@ def plot_section_differences(
         
         for idx, data in enumerate(all_before_filter):
             label = ply_names[idx] if ply_names is not None else f"Section {idx}"
-            ax_before_filter.plot(plot_x, data, label=label, color=colors[idx], alpha=0.7)
+            ax_before_filter.plot(plot_x, data, label=label, color=colors[idx], alpha=0.7, linewidth=line_width_data)
         
-        ax_before_filter.set_xlabel(xlabel)
-        ax_before_filter.set_ylabel(ylabel_displacement)
+        ax_before_filter.set_xlabel(xlabel, fontsize=font_label)
+        ax_before_filter.set_ylabel(ylabel_displacement, fontsize=font_label)
         ax_before_filter.set_title(with_prefix("Before Filtering (After Resampling) - Full Range"))
         if xlim is not None:
             ax_before_filter.set_xlim(xlim)
@@ -167,7 +170,7 @@ def plot_section_differences(
         # データ座標での縦横比を1:1に設定
         ax_before_filter.set_aspect('equal')
         ax_before_filter.grid(True, alpha=0.3)
-        ax_before_filter.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
+        ax_before_filter.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=font_legend)
         plt.tight_layout()
         figures.append(fig_before_filter)
     
@@ -181,10 +184,10 @@ def plot_section_differences(
         
         for idx, displacement in enumerate(all_displacements):
             label = ply_names[idx] if ply_names is not None else f"Section {idx}"
-            ax_displacement_full.plot(plot_x, displacement, label=label, color=colors[idx], alpha=0.7)
+            ax_displacement_full.plot(plot_x, displacement, label=label, color=colors[idx], alpha=0.7, linewidth=line_width_data)
         
-        ax_displacement_full.set_xlabel(xlabel)
-        ax_displacement_full.set_ylabel(ylabel_displacement)
+        ax_displacement_full.set_xlabel(xlabel, fontsize=font_label)
+        ax_displacement_full.set_ylabel(ylabel_displacement, fontsize=font_label)
         ax_displacement_full.set_title(with_prefix("Section Measurement (New XYZ Axis) - Full Range"))
         if xlim is not None:
             ax_displacement_full.set_xlim(xlim)
@@ -193,7 +196,7 @@ def plot_section_differences(
         # データ座標での縦横比を1:1に設定
         ax_displacement_full.set_aspect('equal')
         ax_displacement_full.grid(True, alpha=0.3)
-        ax_displacement_full.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
+        ax_displacement_full.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=font_legend)
         plt.tight_layout()
         figures.append(fig_displacement_full)
     
@@ -206,10 +209,10 @@ def plot_section_differences(
     
     for idx, diff in enumerate(all_differences):
         label = ply_names[idx] if ply_names is not None else f"Section {idx}"
-        ax_difference_full.plot(plot_x, diff, label=label, color=colors[idx], alpha=0.7)
+        ax_difference_full.plot(plot_x, diff, label=label, color=colors[idx], alpha=0.7, linewidth=line_width_data)
     
-    ax_difference_full.set_xlabel(xlabel)
-    ax_difference_full.set_ylabel(ylabel_difference)
+    ax_difference_full.set_xlabel(xlabel, fontsize=font_label)
+    ax_difference_full.set_ylabel(ylabel_difference, fontsize=font_label)
     ax_difference_full.set_title(with_prefix("Section Difference (from Initial Section) - Full Range"))
     if xlim is not None:
         ax_difference_full.set_xlim(xlim)
@@ -218,7 +221,7 @@ def plot_section_differences(
     # データ座標での縦横比を1:1に設定
     ax_difference_full.set_aspect('equal')
     ax_difference_full.grid(True, alpha=0.3)
-    ax_difference_full.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
+    ax_difference_full.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=font_legend)
     plt.tight_layout()
     figures.append(fig_difference_full)
     
@@ -248,10 +251,10 @@ def plot_section_differences(
 
             for idx, displacement in enumerate(all_displacements):
                 label = ply_names[idx] if ply_names is not None else f"Section {idx}"
-                ax_displacement_zoom.plot(plot_x_zoom, displacement, label=label, color=colors[idx], alpha=0.7)
+                ax_displacement_zoom.plot(plot_x_zoom, displacement, label=label, color=colors[idx], alpha=0.7, linewidth=line_width_data)
 
-            ax_displacement_zoom.set_xlabel(xlabel)
-            ax_displacement_zoom.set_ylabel(ylabel_displacement)
+            ax_displacement_zoom.set_xlabel(xlabel, fontsize=font_label)
+            ax_displacement_zoom.set_ylabel(ylabel_displacement, fontsize=font_label)
             ax_displacement_zoom.set_title(with_prefix("Section Measurement (New XYZ Axis) - Zoom"))
             ax_displacement_zoom.set_xlim(xlim_zoom_final)
             # Zoom用のY範囲が指定されていればそれを優先し、なければ全域用の設定を使う
@@ -264,7 +267,7 @@ def plot_section_differences(
             # データ座標での縦横比を1:1に設定
             ax_displacement_zoom.set_aspect('equal')
             ax_displacement_zoom.grid(True, alpha=0.3)
-            ax_displacement_zoom.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
+            ax_displacement_zoom.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=font_legend)
             plt.tight_layout()
             figures.append(fig_displacement_zoom)
 
@@ -276,10 +279,10 @@ def plot_section_differences(
         
         for idx, diff in enumerate(all_differences):
             label = ply_names[idx] if ply_names is not None else f"Section {idx}"
-            ax_difference_zoom.plot(plot_x_zoom, diff, label=label, color=colors[idx], alpha=0.7)
+            ax_difference_zoom.plot(plot_x_zoom, diff, label=label, color=colors[idx], alpha=0.7, linewidth=line_width_data)
         
-        ax_difference_zoom.set_xlabel(xlabel)
-        ax_difference_zoom.set_ylabel(ylabel_difference)
+        ax_difference_zoom.set_xlabel(xlabel, fontsize=font_label)
+        ax_difference_zoom.set_ylabel(ylabel_difference, fontsize=font_label)
         ax_difference_zoom.set_title(with_prefix("Section Difference (from Initial Section) - Zoom"))
         ax_difference_zoom.set_xlim(xlim_zoom_final)
         if ylim_difference_zoom is not None:
@@ -287,7 +290,7 @@ def plot_section_differences(
         # データ座標での縦横比を1:1に設定
         ax_difference_zoom.set_aspect('equal')
         ax_difference_zoom.grid(True, alpha=0.3)
-        ax_difference_zoom.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
+        ax_difference_zoom.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=font_legend)
         plt.tight_layout()
         figures.append(fig_difference_zoom)
     
@@ -308,6 +311,10 @@ def plot_initial_section_with_lines(
     title: str = "Initial Section with Cross-Section Line",
     figsize: tuple = (15, 10),
     plot_range: Optional[Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]] = None,
+    font_title: float = 14,
+    font_legend: float = 8,
+    line_width_main: float = 2,
+    line_width_aux: float = 1,
 ) -> plt.Figure:
     """
     初期断面の点群を可視化し、断面直線と新しいZ軸方向（地面平面の法線）を重ねて表示する。
@@ -460,7 +467,7 @@ def plot_initial_section_with_lines(
     if len(cross_section_points_original) > 0:
         ax_xy_orig.scatter(cross_section_points_original[:, 0], cross_section_points_original[:, 1], 
                           c='red', s=5, alpha=0.8, label='Cross-section points')
-    ax_xy_orig.plot([point1[0], point2[0]], [point1[1], point2[1]], 'b-', linewidth=2, label='Cross-section line')
+    ax_xy_orig.plot([point1[0], point2[0]], [point1[1], point2[1]], 'b-', linewidth=line_width_main, label='Cross-section line')
     # 抽出面の範囲を表示（平面の法線方向にthresholdの範囲で線を描画）
     if plane_normal_vec is not None:
         # 平面の法線ベクトルのXY投影
@@ -474,7 +481,7 @@ def plot_initial_section_with_lines(
                                     p[0] + plane_normal_xy_normalized[0] * cross_section_threshold])
                 offset_y = np.array([p[1] - plane_normal_xy_normalized[1] * cross_section_threshold,
                                     p[1] + plane_normal_xy_normalized[1] * cross_section_threshold])
-                ax_xy_orig.plot(offset_x, offset_y, 'm--', linewidth=1, alpha=0.5)
+                ax_xy_orig.plot(offset_x, offset_y, 'm--', linewidth=line_width_aux, alpha=0.5)
     z_axis_xy = plane_normal[:2]
     z_axis_xy_length = np.linalg.norm(z_axis_xy)
     if z_axis_xy_length > 1e-10:
@@ -483,7 +490,7 @@ def plot_initial_section_with_lines(
                             mid_point_orig[0] + z_axis_xy_normalized[0] * axis_length_orig])
         z_axis_y = np.array([mid_point_orig[1] - z_axis_xy_normalized[1] * axis_length_orig,
                             mid_point_orig[1] + z_axis_xy_normalized[1] * axis_length_orig])
-        ax_xy_orig.plot(z_axis_x, z_axis_y, 'g--', linewidth=2, label='New Z-axis (ground normal)')
+        ax_xy_orig.plot(z_axis_x, z_axis_y, 'g--', linewidth=line_width_main, label='New Z-axis (ground normal)')
     ax_xy_orig.plot(point1[0], point1[1], 'bo', markersize=10, label='Point 1')
     ax_xy_orig.plot(point2[0], point2[1], 'bs', markersize=10, label='Point 2')
     ax_xy_orig.set_xlabel('X (m)')
@@ -494,7 +501,7 @@ def plot_initial_section_with_lines(
     ax_xy_orig.set_xlim(x_min_xy, x_max_xy)
     ax_xy_orig.set_ylim(y_min_xy, y_max_xy)
     ax_xy_orig.grid(True, alpha=0.3)
-    ax_xy_orig.legend(fontsize=8)
+    ax_xy_orig.legend(fontsize=font_legend)
     
     # YZ平面
     if len(non_ground_points_orig) > 0:
@@ -506,7 +513,7 @@ def plot_initial_section_with_lines(
     if len(cross_section_points_original) > 0:
         ax_yz_orig.scatter(cross_section_points_original[:, 1], cross_section_points_original[:, 2], 
                           c='red', s=5, alpha=0.8, label='Cross-section points')
-    ax_yz_orig.plot([point1[1], point2[1]], [point1[2], point2[2]], 'b-', linewidth=2, label='Cross-section line')
+    ax_yz_orig.plot([point1[1], point2[1]], [point1[2], point2[2]], 'b-', linewidth=line_width_main, label='Cross-section line')
     # 抽出面の範囲を表示（平面の法線方向にthresholdの範囲で線を描画）
     if plane_normal_vec is not None:
         # 平面の法線ベクトルのYZ投影
@@ -520,7 +527,7 @@ def plot_initial_section_with_lines(
                                     p[1] + plane_normal_yz_normalized[0] * cross_section_threshold])
                 offset_z = np.array([p[2] - plane_normal_yz_normalized[1] * cross_section_threshold,
                                     p[2] + plane_normal_yz_normalized[1] * cross_section_threshold])
-                ax_yz_orig.plot(offset_y, offset_z, 'm--', linewidth=1, alpha=0.5)
+                ax_yz_orig.plot(offset_y, offset_z, 'm--', linewidth=line_width_aux, alpha=0.5)
     z_axis_yz = plane_normal[1:3]
     z_axis_yz_length = np.linalg.norm(z_axis_yz)
     if z_axis_yz_length > 1e-10:
@@ -529,7 +536,7 @@ def plot_initial_section_with_lines(
                                    mid_point_orig[1] + z_axis_yz_normalized[0] * axis_length_orig])
         z_axis_z_coords = np.array([mid_point_orig[2] - z_axis_yz_normalized[1] * axis_length_orig,
                                    mid_point_orig[2] + z_axis_yz_normalized[1] * axis_length_orig])
-        ax_yz_orig.plot(z_axis_y_coords, z_axis_z_coords, 'g--', linewidth=2, label='New Z-axis (ground normal)')
+        ax_yz_orig.plot(z_axis_y_coords, z_axis_z_coords, 'g--', linewidth=line_width_main, label='New Z-axis (ground normal)')
     ax_yz_orig.plot(point1[1], point1[2], 'bo', markersize=10, label='Point 1')
     ax_yz_orig.plot(point2[1], point2[2], 'bs', markersize=10, label='Point 2')
     ax_yz_orig.set_xlabel('Y (m)')
@@ -539,7 +546,7 @@ def plot_initial_section_with_lines(
     ax_yz_orig.set_xlim(y_min_yz, y_max_yz)
     ax_yz_orig.set_ylim(z_min_yz, z_max_yz)
     ax_yz_orig.grid(True, alpha=0.3)
-    ax_yz_orig.legend(fontsize=8)
+    ax_yz_orig.legend(fontsize=font_legend)
     
     # XZ平面
     if len(non_ground_points_orig) > 0:
@@ -551,7 +558,7 @@ def plot_initial_section_with_lines(
     if len(cross_section_points_original) > 0:
         ax_xz_orig.scatter(cross_section_points_original[:, 0], cross_section_points_original[:, 2], 
                           c='red', s=5, alpha=0.8, label='Cross-section points')
-    ax_xz_orig.plot([point1[0], point2[0]], [point1[2], point2[2]], 'b-', linewidth=2, label='Cross-section line')
+    ax_xz_orig.plot([point1[0], point2[0]], [point1[2], point2[2]], 'b-', linewidth=line_width_main, label='Cross-section line')
     # 抽出面の範囲を表示（平面の法線方向にthresholdの範囲で線を描画）
     if plane_normal_vec is not None:
         # 平面の法線ベクトルのXZ投影
@@ -565,7 +572,7 @@ def plot_initial_section_with_lines(
                                     p[0] + plane_normal_xz_normalized[0] * cross_section_threshold])
                 offset_z = np.array([p[2] - plane_normal_xz_normalized[1] * cross_section_threshold,
                                     p[2] + plane_normal_xz_normalized[1] * cross_section_threshold])
-                ax_xz_orig.plot(offset_x, offset_z, 'm--', linewidth=1, alpha=0.5)
+                ax_xz_orig.plot(offset_x, offset_z, 'm--', linewidth=line_width_aux, alpha=0.5)
     z_axis_xz = np.array([plane_normal[0], plane_normal[2]])
     z_axis_xz_length = np.linalg.norm(z_axis_xz)
     if z_axis_xz_length > 1e-10:
@@ -574,7 +581,7 @@ def plot_initial_section_with_lines(
                                    mid_point_orig[0] + z_axis_xz_normalized[0] * axis_length_orig])
         z_axis_z_coords = np.array([mid_point_orig[2] - z_axis_xz_normalized[1] * axis_length_orig,
                                    mid_point_orig[2] + z_axis_xz_normalized[1] * axis_length_orig])
-        ax_xz_orig.plot(z_axis_x_coords, z_axis_z_coords, 'g--', linewidth=2, label='New Z-axis (ground normal)')
+        ax_xz_orig.plot(z_axis_x_coords, z_axis_z_coords, 'g--', linewidth=line_width_main, label='New Z-axis (ground normal)')
     ax_xz_orig.plot(point1[0], point1[2], 'bo', markersize=10, label='Point 1')
     ax_xz_orig.plot(point2[0], point2[2], 'bs', markersize=10, label='Point 2')
     ax_xz_orig.set_xlabel('X (m)')
@@ -584,7 +591,7 @@ def plot_initial_section_with_lines(
     ax_xz_orig.set_xlim(x_min_xz, x_max_xz)
     ax_xz_orig.set_ylim(z_min_xz, z_max_xz)
     ax_xz_orig.grid(True, alpha=0.3)
-    ax_xz_orig.legend(fontsize=8)
+    ax_xz_orig.legend(fontsize=font_legend)
     
     # ========== 新しいxyz軸のプロット ==========
     # XY平面
@@ -598,7 +605,7 @@ def plot_initial_section_with_lines(
         ax_xy_new.scatter(cross_section_points_rotated[:, 0], cross_section_points_rotated[:, 1], 
                          c='red', s=5, alpha=0.8, label='Cross-section points')
     ax_xy_new.plot([point1_rotated[0], point2_rotated[0]], [point1_rotated[1], point2_rotated[1]], 
-                  'b-', linewidth=2, label='Cross-section line')
+                  'b-', linewidth=line_width_main, label='Cross-section line')
     # 抽出面の範囲を表示（平面の法線方向にthresholdの範囲で線を描画）
     # 新しいxyz軸では、平面の法線は断面直線に垂直な方向
     line_dir_rotated = point2_rotated - point1_rotated
@@ -616,7 +623,7 @@ def plot_initial_section_with_lines(
                                     p[0] + plane_normal_xy_new[0] * cross_section_threshold])
                 offset_y = np.array([p[1] - plane_normal_xy_new[1] * cross_section_threshold,
                                     p[1] + plane_normal_xy_new[1] * cross_section_threshold])
-                ax_xy_new.plot(offset_x, offset_y, 'm--', linewidth=1, alpha=0.5)
+                ax_xy_new.plot(offset_x, offset_y, 'm--', linewidth=line_width_aux, alpha=0.5)
     # 新しいxyz軸ではZ軸は垂直方向[0, 0, 1]なので、XY平面への投影は点になる
     ax_xy_new.plot(mid_point_new[0], mid_point_new[1], 'go', markersize=10, label='Z-axis (vertical)')
     ax_xy_new.plot(point1_rotated[0], point1_rotated[1], 'bo', markersize=10, label='Point 1')
@@ -628,7 +635,7 @@ def plot_initial_section_with_lines(
     ax_xy_new.set_xlim(x_min_xy, x_max_xy)
     ax_xy_new.set_ylim(y_min_xy, y_max_xy)
     ax_xy_new.grid(True, alpha=0.3)
-    ax_xy_new.legend(fontsize=8)
+    ax_xy_new.legend(fontsize=font_legend)
     
     # YZ平面
     if len(non_ground_points_new) > 0:
@@ -641,18 +648,18 @@ def plot_initial_section_with_lines(
         ax_yz_new.scatter(cross_section_points_rotated[:, 1], cross_section_points_rotated[:, 2], 
                          c='red', s=5, alpha=0.8, label='Cross-section points')
     ax_yz_new.plot([point1_rotated[1], point2_rotated[1]], [point1_rotated[2], point2_rotated[2]], 
-                  'b-', linewidth=2, label='Cross-section line')
+                  'b-', linewidth=line_width_main, label='Cross-section line')
     # 新しいxyz軸ではZ軸は垂直方向[0, 0, 1]なので、YZ平面では垂直線として表示
     z_axis_y_coords = np.array([mid_point_new[1], mid_point_new[1]])
     z_axis_z_coords = np.array([mid_point_new[2] - axis_length_new, mid_point_new[2] + axis_length_new])
-    ax_yz_new.plot(z_axis_y_coords, z_axis_z_coords, 'g--', linewidth=2, label='Z-axis (vertical)')
+    ax_yz_new.plot(z_axis_y_coords, z_axis_z_coords, 'g--', linewidth=line_width_main, label='Z-axis (vertical)')
     # 抽出面の範囲を表示（Z軸方向にz_rangeの範囲で線を描画）
     if z_min is not None and z_max is not None:
         # 断面直線に沿って、Z軸方向にz_rangeの範囲で線を描画
         for p in [point1_rotated, point2_rotated]:
             z_range_y = np.array([p[1], p[1]])
             z_range_z = np.array([z_min, z_max])
-            ax_yz_new.plot(z_range_y, z_range_z, 'm--', linewidth=1, alpha=0.5)
+            ax_yz_new.plot(z_range_y, z_range_z, 'm--', linewidth=line_width_aux, alpha=0.5)
     ax_yz_new.plot(point1_rotated[1], point1_rotated[2], 'bo', markersize=10, label='Point 1')
     ax_yz_new.plot(point2_rotated[1], point2_rotated[2], 'bs', markersize=10, label='Point 2')
     ax_yz_new.set_xlabel('Y (m)')
@@ -662,7 +669,7 @@ def plot_initial_section_with_lines(
     ax_yz_new.set_xlim(y_min_yz, y_max_yz)
     ax_yz_new.set_ylim(z_min_yz, z_max_yz)
     ax_yz_new.grid(True, alpha=0.3)
-    ax_yz_new.legend(fontsize=8)
+    ax_yz_new.legend(fontsize=font_legend)
     
     # XZ平面
     if len(non_ground_points_new) > 0:
@@ -675,18 +682,18 @@ def plot_initial_section_with_lines(
         ax_xz_new.scatter(cross_section_points_rotated[:, 0], cross_section_points_rotated[:, 2], 
                          c='red', s=5, alpha=0.8, label='Cross-section points')
     ax_xz_new.plot([point1_rotated[0], point2_rotated[0]], [point1_rotated[2], point2_rotated[2]], 
-                  'b-', linewidth=2, label='Cross-section line')
+                  'b-', linewidth=line_width_main, label='Cross-section line')
     # 新しいxyz軸ではZ軸は垂直方向[0, 0, 1]なので、XZ平面では垂直線として表示
     z_axis_x_coords = np.array([mid_point_new[0], mid_point_new[0]])
     z_axis_z_coords = np.array([mid_point_new[2] - axis_length_new, mid_point_new[2] + axis_length_new])
-    ax_xz_new.plot(z_axis_x_coords, z_axis_z_coords, 'g--', linewidth=2, label='Z-axis (vertical)')
+    ax_xz_new.plot(z_axis_x_coords, z_axis_z_coords, 'g--', linewidth=line_width_main, label='Z-axis (vertical)')
     # 抽出面の範囲を表示（Z軸方向にz_rangeの範囲で線を描画）
     if z_min is not None and z_max is not None:
         # 断面直線に沿って、Z軸方向にz_rangeの範囲で線を描画
         for p in [point1_rotated, point2_rotated]:
             z_range_x = np.array([p[0], p[0]])
             z_range_z = np.array([z_min, z_max])
-            ax_xz_new.plot(z_range_x, z_range_z, 'm--', linewidth=1, alpha=0.5)
+            ax_xz_new.plot(z_range_x, z_range_z, 'm--', linewidth=line_width_aux, alpha=0.5)
     ax_xz_new.plot(point1_rotated[0], point1_rotated[2], 'bo', markersize=10, label='Point 1')
     ax_xz_new.plot(point2_rotated[0], point2_rotated[2], 'bs', markersize=10, label='Point 2')
     ax_xz_new.set_xlabel('X (m)')
@@ -696,10 +703,10 @@ def plot_initial_section_with_lines(
     ax_xz_new.set_xlim(x_min_xz, x_max_xz)
     ax_xz_new.set_ylim(z_min_xz, z_max_xz)
     ax_xz_new.grid(True, alpha=0.3)
-    ax_xz_new.legend(fontsize=8)
+    ax_xz_new.legend(fontsize=font_legend)
     
     # 全体のタイトルを設定
-    fig.suptitle(title, fontsize=14)
+    fig.suptitle(title, fontsize=font_title)
     
     plt.tight_layout()
     

@@ -114,6 +114,24 @@ def validate_config(cfg: dict) -> None:
             f"cross_section.end_index_max ({end_idx}) は start_index ({start_idx}) より大きい必要があります"
         )
 
+    # plot.figure / font / line（省略可、指定時は正の値）
+    plot = cfg.get("plot", {})
+    for key in ("figure", "font", "line"):
+        block = plot.get(key) or {}
+        if key == "figure":
+            if block.get("base_width") is not None and block["base_width"] <= 0:
+                raise ValueError("plot.figure.base_width は正の値である必要があります")
+            if block.get("dpi") is not None and block["dpi"] <= 0:
+                raise ValueError("plot.figure.dpi は正の値である必要があります")
+        elif key == "font":
+            for k in ("legend", "title", "label"):
+                if block.get(k) is not None and block[k] <= 0:
+                    raise ValueError(f"plot.font.{k} は正の値である必要があります")
+        elif key == "line":
+            for k in ("main", "aux", "data"):
+                if block.get(k) is not None and block[k] <= 0:
+                    raise ValueError(f"plot.line.{k} は正の値である必要があります")
+
 
 def load_config(
     ply_directory: Path,

@@ -1,38 +1,72 @@
 # Intel LiDAR 断面図化 - 共通デフォルトパラメータ
 # データセット固有の params/<case>.yaml で上書き可能（params は params_sample のコピー）
 
-# 断面抽出
+# ---------------------------------------------------------------------------
+# 断面抽出 (cross_section)
+# 補正後座標で「断面直線から一定距離・一定Z範囲・一定インデックス範囲」の点を採用
+# ---------------------------------------------------------------------------
 cross_section:
+  # threshold [m]: 断面直線を含む鉛直平面からの距離閾値。この距離以内の点を断面点とする
   threshold: 0.005
+  # z_range [m]: 補正後Zの範囲 (min, max)。床・天井などを除外する。null で範囲制限なし
   z_range: [-1.05, -0.75]
+  # start_index: プロファイル（距離順ソート後）の先頭から使う開始インデックス
   start_index: 0
+  # end_index_max: プロファイルの終了インデックス上限。この手前までを有効点とする
   end_index_max: 5000
 
-# 共通グリッド
+# ---------------------------------------------------------------------------
+# 共通グリッド (common_grid)
+# 全PLYのプロファイルを同じ「距離の目盛り」に補間し、時刻間で差分を取れるようにする
+# ---------------------------------------------------------------------------
 common_grid:
+  # x_min [mm]: 共通グリッドの最小距離（断面直線上の point1 基準）
   x_min: 0.0
-  x_max: null  # null の場合は断面直線の長さから自動設定 (mm)
+  # x_max [mm]: 共通グリッドの最大距離。null の場合は断面直線の長さから自動設定
+  x_max: null
+  # x_points: 共通グリッドの点数。補間は np.linspace(x_min, x_max, x_points) で生成
   x_points: 500
 
-# 前処理 (preprocess_lidar_profile)
+# ---------------------------------------------------------------------------
+# 前処理 (filter) — preprocess_lidar_profile
+# 等間隔化 → メディアン（スパイク除去）→ Savitzky–Golay（平滑化）の順で適用
+# ---------------------------------------------------------------------------
 filter:
+  # dx [mm]: 等間隔化の目標グリッド間隔。null の場合は median(diff(x)) を使用
   dx: null
+  # uneven_tol: 不等間隔とみなすしきい値。diff(x) の CV と range_ratio が両方これ以下なら等間隔とみなし等間隔化をスキップ
   uneven_tol: 0.01
+  # median_k: メディアンフィルタの窓長（点の数、奇数に丸め）。スパイク状外れ値を抑える
   median_k: 5
+  # sg_window: Savitzky–Golay フィルタの窓長（点の数、奇数に調整）。滑らかにしつつ形状を保持
   sg_window: 21
+  # sg_poly: Savitzky–Golay の多項式次数。sg_window > sg_poly である必要あり
   sg_poly: 3
+  # interp_method: 等間隔化・共通グリッド補間の方法。linear / nearest / quadratic / cubic
   interp_method: linear
 
-# 地面抽出ROI (Noneの場合は全点を使用)
+# ---------------------------------------------------------------------------
+# 地面抽出 (ground) — RANSAC 平面フィット
+# 地面らしい平面を推定し、その法線を鉛直（Z軸）として座標を回転する
+# ---------------------------------------------------------------------------
 ground:
+  # z_range [m]: 地面候補を探すZの範囲 (min, max)。null なら全点を使用
   z_range: [-1.6, -1.4]
+  # xy_range: 地面候補のXY範囲。null で制限なし。指定時は ((x_min,x_max),(y_min,y_max))
   xy_range: null
+  # distance_threshold [m]: 平面からの距離がこの値以内の点を「インライア」とみなす
   distance_threshold: 0.001
+  # ransac_n: 1回の試行で使うサンプル点数（平面は3点で決定）
   ransac_n: 3
+  # num_iterations: RANSAC の試行回数。多いほど外れ値に強い推定になりやすい
   num_iterations: 1000
 
-# 図化パラメータ
+# ---------------------------------------------------------------------------
+# 図化パラメータ (plot)
+# 凡例・Zoom 区間・軸範囲・図の縦横比など
+# ---------------------------------------------------------------------------
 plot:
+  # legend_names: 凡例に表示するラベル。指定時は名前から時刻を解釈してPLYを選択する
   legend_names:
     - Initial
     - "5 minutes"
@@ -45,17 +79,55 @@ plot:
     - "40 minutes "
     - Last-1
     - Last
+  # zoom_width [mm]: Zoom グラフのX軸幅。護岸交点（+ revetment_shift_mm）を左端としてこの幅だけ表示
   zoom_width: 220
+  # revetment_shift_mm [mm]: Zoom の 0 点を護岸交点から左右にずらす量（正で右方向）
   revetment_shift_mm: 0
+  # xlim: 全域グラフのX軸範囲 (x_min, x_max)。null で自動
   xlim: null
+  # ylim_displacement: 計測値（高さ）グラフのY軸範囲。null で自動
   ylim_displacement: null
+  # ylim_difference: 差分グラフのY軸範囲。null で自動
   ylim_difference: null
+  # x_start_from_zero: true のとき X 軸を 0 始まりにずらして表示
   x_start_from_zero: true
+  # show_zoom: true のとき Zoom 区間のグラフも出力する
   show_zoom: true
+  # ylim_difference_zoom: Zoom 区間の差分グラフのY軸範囲
   ylim_difference_zoom: [-100, 10]
+  # ylim_displacement_zoom: Zoom 区間の計測値グラフのY軸範囲
   ylim_displacement_zoom: [-860, -750]
+  # graph_size_ratio: 各グラフの縦横比 (幅, 高さ)。例: [4, 6] で横:縦 = 4:6
   graph_size_ratio: [4, 6]
 
-# 3D可視化の範囲 [m] ((x_min, x_max), (y_min, y_max), (z_min, z_max))
+  # figure: 図のサイズ・解像度（省略時はデフォルト）
+  #   base_width [inch]: グラフ1枚あたりの基準幅。高さは graph_size_ratio から計算
+  #   dpi: 保存時の解像度（dot per inch）
+  figure:
+    base_width: 9.0
+    dpi: 300
+
+  # font: フォントサイズ [pt]
+  #   legend: 凡例
+  #   title: 全体タイトル（initial_section の suptitle）
+  #   label: 軸ラベル
+  font:
+    legend: 12
+    title: 14
+    label: 12
+
+  # line: 線の太さ
+  #   main: 断面直線・Z軸など主線
+  #   aux: 断面範囲などの補助線
+  #   data: 計測値・差分の曲線
+  line:
+    main: 2
+    aux: 1
+    data: 5
+
+# ---------------------------------------------------------------------------
+# 3D可視化 (plot_3d) — 初期断面図の表示範囲
+# 範囲 [m]: ((x_min, x_max), (y_min, y_max), (z_min, z_max))
+# ---------------------------------------------------------------------------
 plot_3d:
   range: [[-1.5, 1.5], [-1.0, 1.5], [-2.0, 0.0]]

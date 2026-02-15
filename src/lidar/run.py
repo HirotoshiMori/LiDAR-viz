@@ -27,6 +27,12 @@ _OUTPUT_FIGS = [
 
 def _save_figures(out: OutputManager, result: PipelineResult) -> None:
     """図を4つに絞って保存する。"""
+    plot_cfg = result.config.get("plot", {})
+    figure_cfg = plot_cfg.get("figure") or {}
+    font_cfg = plot_cfg.get("font") or {}
+    line_cfg = plot_cfg.get("line") or {}
+    dpi = figure_cfg.get("dpi", 150)
+
     # 1. initial_section.png
     if (
         result.initial_points_original is not None
@@ -48,12 +54,15 @@ def _save_figures(out: OutputManager, result: PipelineResult) -> None:
             cross_section_z_range=cs.get("z_range"),
             title="Initial Section with Cross-Section Line",
             plot_range=plot_3d.get("range"),
+            font_title=font_cfg.get("title", 14),
+            font_legend=font_cfg.get("legend", 8),
+            line_width_main=line_cfg.get("main", 2),
+            line_width_aux=line_cfg.get("aux", 1),
         )
-        fig.savefig(out.fig_path("initial_section.png"), dpi=150, bbox_inches="tight")
+        fig.savefig(out.fig_path("initial_section.png"), dpi=dpi, bbox_inches="tight")
         plt.close(fig)
 
     # 2-4. displacement_full.jpg, displacement_zoom.png, difference_zoom.png
-    plot_cfg = result.config.get("plot", {})
     figures = plot_section_differences(
         result.common_x,
         result.all_differences,
@@ -75,12 +84,16 @@ def _save_figures(out: OutputManager, result: PipelineResult) -> None:
         graph_size_ratio=plot_cfg.get("graph_size_ratio"),
         title_prefix=out.case_id,
         x_zero_zoom=result.x_zero_zoom,
+        figure_base_width=figure_cfg.get("base_width", 9.0),
+        font_legend=font_cfg.get("legend", 8),
+        font_label=font_cfg.get("label", 10),
+        line_width_data=line_cfg.get("data", 1.5),
     )
     for i, fig in enumerate(figures):
         spec = _OUTPUT_FIGS[i] if i < len(_OUTPUT_FIGS) else None
         if spec is not None:
             name, ext = spec
-            fig.savefig(out.fig_path(f"{name}.{ext}"), dpi=150, bbox_inches="tight")
+            fig.savefig(out.fig_path(f"{name}.{ext}"), dpi=dpi, bbox_inches="tight")
         plt.close(fig)
 
 
