@@ -2,8 +2,61 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import hsv_to_rgb
 from matplotlib.ticker import MultipleLocator
-from typing import List, Optional, Tuple
+from typing import List, Optional, Sequence, Tuple
+
+# スライド映写でも白地に沈まない色。明度を抑え、黄・水色・薄緑は使わない。
+_SLIDE_LINE_COLORS = np.array(
+    [
+        [0.00, 0.00, 0.00],
+        [0.78, 0.00, 0.00],
+        [0.00, 0.18, 0.72],
+        [0.00, 0.38, 0.00],
+        [0.78, 0.28, 0.00],
+        [0.42, 0.00, 0.55],
+        [0.00, 0.32, 0.38],
+        [0.68, 0.00, 0.32],
+        [0.40, 0.18, 0.00],
+        [0.12, 0.12, 0.48],
+        [0.48, 0.32, 0.00],
+        [0.36, 0.00, 0.12],
+    ],
+    dtype=float,
+)
+
+
+def _high_contrast_colors(n: int) -> np.ndarray:
+    """時刻系列の線色。映写しても隣同士が分かれる濃い色を返す。"""
+    if n <= 0:
+        return np.zeros((0, 3))
+    if n <= len(_SLIDE_LINE_COLORS):
+        return _SLIDE_LINE_COLORS[:n]
+    hues = np.linspace(0.0, 1.0, n, endpoint=False)
+    hsv = np.column_stack([hues, np.full(n, 1.0), np.full(n, 0.55)])
+    return hsv_to_rgb(hsv)
+
+
+def _zoom_legend_loc(
+    x: np.ndarray,
+    series: Sequence[np.ndarray],
+    xlim: Tuple[float, float],
+    ylim: Tuple[float, float],
+) -> str:
+    """断面が寄っている側と逆の、図内の角に凡例を置く。"""
+    x = np.asarray(x, dtype=float)
+    span = xlim[1] - xlim[0]
+    right = x >= (xlim[0] + 0.6 * span) if span > 0 else np.ones(x.shape, dtype=bool)
+    medians = []
+    for values in series:
+        y = np.asarray(values, dtype=float)
+        usable = right & np.isfinite(y) if y.shape == x.shape else np.isfinite(y)
+        if np.any(usable):
+            medians.append(float(np.nanmedian(y[usable])))
+    if not medians:
+        return "upper right"
+    mid = 0.5 * (ylim[0] + ylim[1])
+    return "lower right" if float(np.median(medians)) >= mid else "upper right"
 
 
 def plot_section_differences(
@@ -93,8 +146,8 @@ def plot_section_differences(
     
     n_sections = len(all_differences)
     
-    # カラーマップを生成
-    colors = plt.cm.viridis(np.linspace(0, 1, n_sections))
+    # スライド映写でも区別できる線色
+    colors = _high_contrast_colors(n_sections)
     
     # 計測値のグラフを表示するかどうか
     show_displacements = all_displacements is not None and len(all_displacements) > 0
@@ -132,7 +185,7 @@ def plot_section_differences(
         
         for idx, data in enumerate(all_before_resample):
             label = ply_names[idx] if ply_names is not None else f"Section {idx}"
-            ax_before_resample.plot(plot_x, data, label=label, color=colors[idx], alpha=0.7, linewidth=line_width_data)
+            ax_before_resample.plot(plot_x, data, label=label, color=colors[idx], alpha=1.0, linewidth=line_width_data)
         
         ax_before_resample.set_xlabel(xlabel, fontsize=font_label)
         ax_before_resample.set_ylabel(ylabel_displacement, fontsize=font_label)
@@ -158,7 +211,7 @@ def plot_section_differences(
         
         for idx, data in enumerate(all_before_filter):
             label = ply_names[idx] if ply_names is not None else f"Section {idx}"
-            ax_before_filter.plot(plot_x, data, label=label, color=colors[idx], alpha=0.7, linewidth=line_width_data)
+            ax_before_filter.plot(plot_x, data, label=label, color=colors[idx], alpha=1.0, linewidth=line_width_data)
         
         ax_before_filter.set_xlabel(xlabel, fontsize=font_label)
         ax_before_filter.set_ylabel(ylabel_displacement, fontsize=font_label)
@@ -184,7 +237,7 @@ def plot_section_differences(
         
         for idx, displacement in enumerate(all_displacements):
             label = ply_names[idx] if ply_names is not None else f"Section {idx}"
-            ax_displacement_full.plot(plot_x, displacement, label=label, color=colors[idx], alpha=0.7, linewidth=line_width_data)
+            ax_displacement_full.plot(plot_x, displacement, label=label, color=colors[idx], alpha=1.0, linewidth=line_width_data)
         
         ax_displacement_full.set_xlabel(xlabel, fontsize=font_label)
         ax_displacement_full.set_ylabel(ylabel_displacement, fontsize=font_label)
@@ -209,7 +262,7 @@ def plot_section_differences(
     
     for idx, diff in enumerate(all_differences):
         label = ply_names[idx] if ply_names is not None else f"Section {idx}"
-        ax_difference_full.plot(plot_x, diff, label=label, color=colors[idx], alpha=0.7, linewidth=line_width_data)
+        ax_difference_full.plot(plot_x, diff, label=label, color=colors[idx], alpha=1.0, linewidth=line_width_data)
     
     ax_difference_full.set_xlabel(xlabel, fontsize=font_label)
     ax_difference_full.set_ylabel(ylabel_difference, fontsize=font_label)
@@ -251,7 +304,14 @@ def plot_section_differences(
 
             for idx, displacement in enumerate(all_displacements):
                 label = ply_names[idx] if ply_names is not None else f"Section {idx}"
-                ax_displacement_zoom.plot(plot_x_zoom, displacement, label=label, color=colors[idx], alpha=0.7, linewidth=line_width_data)
+                ax_displacement_zoom.plot(
+                    plot_x_zoom,
+                    displacement,
+                    label=label,
+                    color=colors[idx],
+                    alpha=1.0,
+                    linewidth=line_width_data,
+                )
 
             ax_displacement_zoom.set_xlabel(xlabel, fontsize=font_label)
             ax_displacement_zoom.set_ylabel(ylabel_displacement, fontsize=font_label)
@@ -267,7 +327,18 @@ def plot_section_differences(
             # データ座標での縦横比を1:1に設定
             ax_displacement_zoom.set_aspect('equal')
             ax_displacement_zoom.grid(True, alpha=0.3)
-            ax_displacement_zoom.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=font_legend)
+            legend_loc = _zoom_legend_loc(
+                plot_x_zoom,
+                all_displacements,
+                xlim_zoom_final,
+                ax_displacement_zoom.get_ylim(),
+            )
+            ax_displacement_zoom.legend(
+                loc=legend_loc,
+                fontsize=font_legend,
+                framealpha=0.92,
+                edgecolor="0.35",
+            )
             plt.tight_layout()
             figures.append(fig_displacement_zoom)
 
@@ -279,7 +350,7 @@ def plot_section_differences(
         
         for idx, diff in enumerate(all_differences):
             label = ply_names[idx] if ply_names is not None else f"Section {idx}"
-            ax_difference_zoom.plot(plot_x_zoom, diff, label=label, color=colors[idx], alpha=0.7, linewidth=line_width_data)
+            ax_difference_zoom.plot(plot_x_zoom, diff, label=label, color=colors[idx], alpha=1.0, linewidth=line_width_data)
         
         ax_difference_zoom.set_xlabel(xlabel, fontsize=font_label)
         ax_difference_zoom.set_ylabel(ylabel_difference, fontsize=font_label)
@@ -290,7 +361,18 @@ def plot_section_differences(
         # データ座標での縦横比を1:1に設定
         ax_difference_zoom.set_aspect('equal')
         ax_difference_zoom.grid(True, alpha=0.3)
-        ax_difference_zoom.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=font_legend)
+        legend_loc = _zoom_legend_loc(
+            plot_x_zoom,
+            all_differences,
+            xlim_zoom_final,
+            ax_difference_zoom.get_ylim(),
+        )
+        ax_difference_zoom.legend(
+            loc=legend_loc,
+            fontsize=font_legend,
+            framealpha=0.92,
+            edgecolor="0.35",
+        )
         plt.tight_layout()
         figures.append(fig_difference_zoom)
     
