@@ -1,0 +1,8 @@
+# 座標.txt の ○7ys8（No7-friction-incline-8mm、7ys8*.ply）
+points:
+  point1: [-0.059627, 0.405815, -1.274410]  # 水槽の点
+  point2: [-0.062453, -0.253987, -0.749623]  # 土層の点
+
+plot:
+  inflection_shift_mm: 0
+  ylim_displacement_zoom: [-860, -750]

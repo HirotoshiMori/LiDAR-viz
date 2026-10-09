@@ -1,0 +1,8 @@
+# 座標.txt の ○4y8（No4-incline-8mm、4y8*.ply）
+points:
+  point1: [-0.062504, 0.382803, -1.320915]  # 水槽の点
+  point2: [-0.035554, -0.246034, -0.747486]  # 土層の点
+
+plot:
+  inflection_shift_mm: 0
+  ylim_displacement_zoom: [-860, -750]

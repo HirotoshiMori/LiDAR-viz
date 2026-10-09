@@ -12,7 +12,7 @@ cross_section:
   # threshold [m]: 断面直線を含む鉛直平面からの距離閾値。この距離以内の点を断面点とする
   threshold: 0.005
   # z_range [m]: 補正後Zの範囲 (min, max)。床・天井などを除外する。null で範囲制限なし
-  z_range: [-1.05, -0.75]
+  z_range: [-1.05, -0.55]
   # start_index: プロファイル（距離順ソート後）の先頭から使う開始インデックス
   start_index: 0
   # end_index_max: プロファイルの終了インデックス上限。この手前までを有効点とする

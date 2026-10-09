@@ -1,0 +1,8 @@
+# 座標.txt の ○7k8（No7-frictionhigh-8mm、7k8*.ply）
+points:
+  point1: [-0.080256, 0.409497, -1.186151]  # 水槽の点
+  point2: [-0.041225, -0.235432, -0.758845]  # 土層の点
+
+plot:
+  inflection_shift_mm: 0
+  ylim_displacement_zoom: [-860, -750]

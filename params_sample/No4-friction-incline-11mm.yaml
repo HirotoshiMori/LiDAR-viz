@@ -1,0 +1,8 @@
+# 座標.txt の ○4ys11（No4-friction-incline-11mm、4ys11*.ply）
+points:
+  point1: [-0.063625, 0.421605, -1.248234]  # 水槽の点
+  point2: [-0.060411, -0.225562, -0.756314]  # 土層の点
+
+plot:
+  inflection_shift_mm: 0
+  ylim_displacement_zoom: [-860, -750]

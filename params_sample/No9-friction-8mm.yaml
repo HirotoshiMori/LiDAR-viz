@@ -1,0 +1,8 @@
+# 座標.txt の ○9s8（No9-friction-8mm、9s8*.ply）
+points:
+  point1: [-0.026730, 0.416783, -1.233946]  # 水槽の点
+  point2: [-0.055687, -0.265994, -0.736938]  # 土層の点
+
+plot:
+  inflection_shift_mm: 0
+  ylim_displacement_zoom: [-860, -750]

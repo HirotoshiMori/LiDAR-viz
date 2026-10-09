@@ -3,6 +3,10 @@ points:
   point1: [-0.017886, 0.374809,-1.207308]  # 水槽の点
   point2: [-0.050339,-0.274244,-0.733318]   # 土層の点
 
+# 地表面より 5 cm 以上上の点（計測器）を断面から外す
+cross_section:
+  max_above_surface_m: 0.05
+
 plot:
   inflection_shift_mm: 0
   ylim_displacement_zoom: [-860, -750]

@@ -1,0 +1,8 @@
+# 座標.txt の ○7a8（No7-8mm、7a8*.ply）
+points:
+  point1: [-0.055269, 0.435428, -1.194830]  # 水槽の点
+  point2: [-0.04827, -0.224557, -0.760088]  # 土層の点
+
+plot:
+  inflection_shift_mm: 0
+  ylim_displacement_zoom: [-860, -750]

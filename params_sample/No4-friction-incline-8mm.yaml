@@ -1,0 +1,8 @@
+# 座標.txt の ○4ys82。4ys8 単独の座標はなく、同じ 4ys8*.ply の No4-friction-incline-8mm に使った
+points:
+  point1: [-0.049681, 0.449180, -1.269665]  # 水槽の点
+  point2: [-0.037644, -0.230927, -0.745991]  # 土層の点
+
+plot:
+  inflection_shift_mm: 0
+  ylim_displacement_zoom: [-860, -750]
