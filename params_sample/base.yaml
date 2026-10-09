@@ -1,5 +1,6 @@
 # Intel LiDAR 断面図化 - 共通デフォルトパラメータ
 # データセット固有の params/<case>.yaml で上書き可能（params は params_sample のコピー）
+# ケース YAML の point1 と point2 で、断面を取りたい箇所を盛土上の2点として指定する
 
 # 床推定 RANSAC の乱数種。LiDAR と土槽の位置はほぼ一定なので、ケース間でも同じ種で比較する
 seed: 0
@@ -88,6 +89,7 @@ plot:
     - Last
   # zoom_width [mm]: Zoom グラフのX軸幅。変曲点（+ inflection_shift_mm）を左端としてこの幅だけ表示
   zoom_width: 220
+  # zero_from_inflection: true のとき、拡大図の横軸0を初期断面の変曲点（+ inflection_shift_mm）にする
   zero_from_inflection: true
   # inflection_shift_mm [mm]: 自動検知した変曲点を断面距離の正方向（point2 側）へずらす量。ケース YAML で上書き可
   inflection_shift_mm: 0

@@ -1,8 +1,11 @@
 # 座標.txt の ○4ys82（No4-friction-incline-8mm-v2、4ys8*.ply）
+# point1 と point2: 断面を取りたい箇所を、盛土上の2点で指定する（元データ座標系 [x, y, z]、単位 m）
 points:
-  point1: [-0.049681, 0.449180, -1.269665]  # 水槽の点
-  point2: [-0.037644, -0.230927, -0.745991]  # 土層の点
+  point1: [-0.049681, 0.449180, -1.269665]
+  point2: [-0.037644, -0.230927, -0.745991]
 
 plot:
+  # 自動検知した変曲点を、断面距離の正方向（point2 側）へずらす量 [mm]
   inflection_shift_mm: 0
+  # displacement_zoom（拡大した計測値）の縦軸範囲 [mm]
   ylim_displacement_zoom: [-860, -750]
