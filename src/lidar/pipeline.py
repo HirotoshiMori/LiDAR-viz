@@ -3,17 +3,22 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 
-from .geometry import extract_cross_section_by_plane, revetment_intersection_distance_mm
+from .geometry import (
+    drop_above_local_surface,
+    extract_cross_section_by_plane,
+    profile_point_xyz,
+    project_to_line,
+)
 from .io_ply import load_point_cloud, natural_sort_paths
 from .leveling import apply_rotation, create_rotation_matrix, estimate_ground_plane
 from .preprocess_lidar import preprocess_lidar_profile
-from .profile import clip_profile_indices, create_profile
+from .profile import clip_profile_indices, create_profile, prominent_inflection_x_mm
 from .resample import resample_to_common_grid
 
 
@@ -29,7 +34,6 @@ class PipelineResult:
     legend_names: list[str]
     point1: np.ndarray
     point2: np.ndarray
-    revetment: np.ndarray
     config: dict[str, Any]
 
     # 3D可視化用（初期断面）
@@ -39,14 +43,17 @@ class PipelineResult:
     initial_cross_section_rotated: np.ndarray | None = None
     initial_plane_normal: np.ndarray | None = None
     initial_ground_mask: np.ndarray | None = None
+    inflection_x_mm: float | None = None
+    inflection_point_original: np.ndarray | None = None
+    inflection_point_rotated: np.ndarray | None = None
 
     @property
     def x_zero_zoom(self) -> float:
-        """Zoomグラフのゼロ点（護岸交点 + シフト）[mm]"""
-        shift = self.config.get("plot", {}).get("revetment_shift_mm", 0)
-        return revetment_intersection_distance_mm(
-            self.revetment, self.point1, self.point2
-        ) + shift
+        """Zoom の 0 点。変曲点（inflection_shift_mm 込み）。未検知なら断面の始端。"""
+        if self.inflection_x_mm is not None:
+            return float(self.inflection_x_mm)
+        finite = self.common_x[np.isfinite(self.common_x)]
+        return float(finite[0]) if len(finite) else 0.0
 
     @property
     def plot_xlim_zoom(self) -> tuple[float, float]:
@@ -182,7 +189,6 @@ def run_pipeline(config: dict[str, Any], verbose: bool = True) -> PipelineResult
     ply_dir = Path(config["_ply_directory"])
     point1 = np.array(config["points"]["point1"], dtype=float)
     point2 = np.array(config["points"]["point2"], dtype=float)
-    revetment = np.array(config["points"]["revetment"], dtype=float)
 
     cs = config.get("cross_section", {})
     cg = config.get("common_grid", {})
@@ -244,6 +250,7 @@ def run_pipeline(config: dict[str, Any], verbose: bool = True) -> PipelineResult
     initial_cross_section_rotated: np.ndarray | None = None
     initial_plane_normal: np.ndarray | None = None
     initial_ground_mask: np.ndarray | None = None
+    initial_rotation_matrix: np.ndarray | None = None
 
     for idx, ply_path in enumerate(ply_files_sorted):
         if verbose:
@@ -254,6 +261,7 @@ def run_pipeline(config: dict[str, Any], verbose: bool = True) -> PipelineResult
             print(f"  ✓ 点群読み込み: {len(points_original)} 点")
 
         if idx == 0:
+            # 断面は指定した point1–point2。床は鉛直に近い面だけで推定し、高さの基準にする。
             plane_normal, plane_point, ground_mask = estimate_ground_plane(
                 points_original,
                 distance_threshold=grd.get("distance_threshold", 0.001),
@@ -261,6 +269,8 @@ def run_pipeline(config: dict[str, Any], verbose: bool = True) -> PipelineResult
                 num_iterations=grd.get("num_iterations", 1000),
                 z_range=grd.get("z_range"),
                 xy_range=grd.get("xy_range"),
+                max_tilt_deg=grd.get("max_tilt_deg", 12.0),
+                seed=config.get("seed", 0),
             )
             if verbose:
                 print(f"  ✓ 地面平面推定完了（法線: {plane_normal}）")
@@ -283,6 +293,23 @@ def run_pipeline(config: dict[str, Any], verbose: bool = True) -> PipelineResult
         if verbose:
             print(f"  ✓ 断面抽出: {len(cross_section_original)} 点")
 
+        max_above = cs.get("max_above_surface_m")
+        if max_above is not None and len(cross_section_original) > 0:
+            rotated_for_cut = apply_rotation(cross_section_original, rotation_matrix)
+            along = project_to_line(cross_section_original, point1, point2)
+            before = len(cross_section_original)
+            cross_section_original = drop_above_local_surface(
+                cross_section_original,
+                rotated_for_cut[:, 2],
+                along,
+                float(max_above),
+            )
+            if verbose:
+                print(
+                    f"  ✓ 地表面より {float(max_above) * 1000:.0f} mm 以上高い点を除外: "
+                    f"{before - len(cross_section_original)} 点"
+                )
+
         points_rotated = apply_rotation(points_original, rotation_matrix)
 
         if idx == 0:
@@ -296,6 +323,7 @@ def run_pipeline(config: dict[str, Any], verbose: bool = True) -> PipelineResult
             )
             initial_plane_normal = plane_normal
             initial_ground_mask = ground_mask
+            initial_rotation_matrix = rotation_matrix
 
         if len(cross_section_original) == 0:
             if verbose:
@@ -358,6 +386,40 @@ def run_pipeline(config: dict[str, Any], verbose: bool = True) -> PipelineResult
     if verbose:
         print(f"\n✓ 全処理完了: {len(all_differences)} 断面")
 
+    if len(all_differences) == 0:
+        raise ValueError(
+            "断面点が0のため処理を中断しました。"
+            " point1・point2 と床の傾き、cross_section.z_range を確認してください。"
+        )
+
+    inflection_x = None
+    inflection_original = None
+    inflection_rotated = None
+    if config.get("plot", {}).get("zero_from_inflection", True):
+        detected_x = prominent_inflection_x_mm(
+            common_x,
+            all_displacements[0],
+            y_increases_with_x=float(point2[1] - point1[1]) > 0,
+        )
+        shift_mm = float(config.get("plot", {}).get("inflection_shift_mm", 0))
+        if detected_x is not None:
+            inflection_x = detected_x + shift_mm
+        if (
+            inflection_x is not None
+            and initial_rotation_matrix is not None
+        ):
+            z_profile = np.asarray(all_displacements[0], dtype=float)
+            finite = np.isfinite(common_x) & np.isfinite(z_profile)
+            z_at = float(np.interp(inflection_x, common_x[finite], z_profile[finite]))
+            inflection_original, inflection_rotated = profile_point_xyz(
+                point1, point2, initial_rotation_matrix, inflection_x, z_at
+            )
+        if verbose and inflection_x is not None:
+            print(
+                f"✓ 初期断面の変曲点（Y負側から最初の±45°）: "
+                f"検知 {detected_x:.1f} mm、オフセット後 {inflection_x:.1f} mm"
+            )
+
     return PipelineResult(
         common_x=common_x,
         all_differences=all_differences,
@@ -367,7 +429,6 @@ def run_pipeline(config: dict[str, Any], verbose: bool = True) -> PipelineResult
         legend_names=legend_names,
         point1=point1,
         point2=point2,
-        revetment=revetment,
         config=config,
         initial_points_original=initial_points_original,
         initial_points_rotated=initial_points_rotated,
@@ -375,4 +436,7 @@ def run_pipeline(config: dict[str, Any], verbose: bool = True) -> PipelineResult
         initial_cross_section_rotated=initial_cross_section_rotated,
         initial_plane_normal=initial_plane_normal,
         initial_ground_mask=initial_ground_mask,
+        inflection_x_mm=inflection_x,
+        inflection_point_original=inflection_original,
+        inflection_point_rotated=inflection_rotated,
     )

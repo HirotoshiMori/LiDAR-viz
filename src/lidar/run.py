@@ -58,6 +58,8 @@ def _save_figures(out: OutputManager, result: PipelineResult) -> None:
             font_legend=font_cfg.get("legend", 8),
             line_width_main=line_cfg.get("main", 2),
             line_width_aux=line_cfg.get("aux", 1),
+            inflection_original=result.inflection_point_original,
+            inflection_rotated=result.inflection_point_rotated,
         )
         fig.savefig(out.fig_path("initial_section.png"), dpi=dpi, bbox_inches="tight")
         plt.close(fig)

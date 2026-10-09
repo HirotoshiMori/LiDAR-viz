@@ -1,6 +1,9 @@
 # Intel LiDAR 断面図化 - 共通デフォルトパラメータ
 # データセット固有の params/<case>.yaml で上書き可能（params は params_sample のコピー）
 
+# 床推定 RANSAC の乱数種。LiDAR と土槽の位置はほぼ一定なので、ケース間でも同じ種で比較する
+seed: 0
+
 # ---------------------------------------------------------------------------
 # 断面抽出 (cross_section)
 # 補正後座標で「断面直線から一定距離・一定Z範囲・一定インデックス範囲」の点を採用
@@ -14,6 +17,8 @@ cross_section:
   start_index: 0
   # end_index_max: プロファイルの終了インデックス上限。この手前までを有効点とする
   end_index_max: 5000
+  # max_above_surface_m [m]: 地表面よりこの高さ以上の点（計測器）を捨てる。null なら切らない
+  max_above_surface_m: 0.05
 
 # ---------------------------------------------------------------------------
 # 共通グリッド (common_grid)
@@ -50,16 +55,18 @@ filter:
 # 地面らしい平面を推定し、その法線を鉛直（Z軸）として座標を回転する
 # ---------------------------------------------------------------------------
 ground:
-  # z_range [m]: 地面候補を探すZの範囲 (min, max)。null なら全点を使用
-  z_range: [-1.6, -1.4]
+  # z_range [m]: 床候補を探すZの範囲 (min, max)。狭いと帯の外の床が落ち、局所的な面になる。null なら全点
+  z_range: [-1.8, -1.2]
   # xy_range: 地面候補のXY範囲。null で制限なし。指定時は ((x_min,x_max),(y_min,y_max))
   xy_range: null
-  # distance_threshold [m]: 平面からの距離がこの値以内の点を「インライア」とみなす
-  distance_threshold: 0.001
+  # distance_threshold [m]: 平面からの距離がこの値以内の点を床とみなす。狭いと局所的な面に寄る
+  distance_threshold: 0.015
   # ransac_n: 1回の試行で使うサンプル点数（平面は3点で決定）
   ransac_n: 3
   # num_iterations: RANSAC の試行回数。多いほど外れ値に強い推定になりやすい
   num_iterations: 1000
+  # max_tilt_deg [度]: 鉛直から許す床の最大傾斜。急な床も補正し、約90°の壁は棄却する
+  max_tilt_deg: 60
 
 # ---------------------------------------------------------------------------
 # 図化パラメータ (plot)
@@ -79,10 +86,11 @@ plot:
     - "40 minutes "
     - Last-1
     - Last
-  # zoom_width [mm]: Zoom グラフのX軸幅。護岸交点（+ revetment_shift_mm）を左端としてこの幅だけ表示
+  # zoom_width [mm]: Zoom グラフのX軸幅。変曲点（+ inflection_shift_mm）を左端としてこの幅だけ表示
   zoom_width: 220
-  # revetment_shift_mm [mm]: Zoom の 0 点を護岸交点から左右にずらす量（正で右方向）
-  revetment_shift_mm: 0
+  zero_from_inflection: true
+  # inflection_shift_mm [mm]: 自動検知した変曲点を断面距離の正方向（point2 側）へずらす量。ケース YAML で上書き可
+  inflection_shift_mm: 0
   # xlim: 全域グラフのX軸範囲 (x_min, x_max)。null で自動
   xlim: null
   # ylim_displacement: 計測値（高さ）グラフのY軸範囲。null で自動
@@ -95,7 +103,7 @@ plot:
   show_zoom: true
   # ylim_difference_zoom: Zoom 区間の差分グラフのY軸範囲
   ylim_difference_zoom: [-100, 10]
-  # ylim_displacement_zoom: Zoom 区間の計測値グラフのY軸範囲
+  # ylim_displacement_zoom: Zoom 区間の計測値グラフのY軸範囲。ケース YAML で上書き可
   ylim_displacement_zoom: [-860, -750]
   # graph_size_ratio: 各グラフの縦横比 (幅, 高さ)。例: [4, 6] で横:縦 = 4:6
   graph_size_ratio: [4, 6]

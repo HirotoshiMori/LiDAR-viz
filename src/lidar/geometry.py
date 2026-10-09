@@ -67,28 +67,21 @@ def project_to_line(
     return proj_length
 
 
-def revetment_intersection_distance_mm(
-    revetment: np.ndarray,
+def profile_point_xyz(
     point1: np.ndarray,
-    point2: np.ndarray
-) -> float:
-    """
-    護岸点を、断面直線（point1-point2）を含み新しいZ軸に平行な平面に垂直な平面と
-    断面直線の交点に射影し、point1からの距離をmm単位で返す。
-    
-    幾何学的には、護岸点から断面直線への垂線の足（投影点）が交点であり、
-    そのpoint1からの距離が返り値となる。
-    
-    Args:
-        revetment: 護岸点 [x, y, z]（元データ座標系、m単位）
-        point1: 断面直線の第1点 [x, y, z]（元データ座標系）
-        point2: 断面直線の第2点 [x, y, z]（元データ座標系）
-        
-    Returns:
-        point1からの射影距離（mm単位）
-    """
-    dist_m = project_to_line(np.atleast_2d(revetment), point1, point2)[0]
-    return float(dist_m * 1000.0)
+    point2: np.ndarray,
+    rotation_matrix: np.ndarray,
+    along_mm: float,
+    z_mm: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """断面距離と回転後高さから、元座標と回転後座標の1点を返す。"""
+    line_dir, _ = _normalized_line_direction(point1, point2)
+    foot = np.asarray(point1, dtype=float) + line_dir * (along_mm / 1000.0)
+    rotated = foot @ rotation_matrix.T
+    rotated = rotated.copy()
+    rotated[2] = z_mm / 1000.0
+    original = rotated @ rotation_matrix
+    return original, rotated
 
 
 def extract_cross_section(
@@ -172,6 +165,69 @@ def distance_to_plane_containing_line(
     distances = np.dot(vec_to_plane, plane_normal_vec)
     
     return distances
+
+
+def _local_surface_height(z: np.ndarray, gap_m: float) -> float:
+    """ビン内の地表面高さ。上下に max の隙間があるときは、隙間より下の点の中央値。"""
+    ordered = np.sort(np.asarray(z, dtype=float))
+    if len(ordered) < 3:
+        return float("nan")
+    gaps = np.diff(ordered)
+    split = int(np.argmax(gaps))
+    if gaps[split] > gap_m and split >= 2:
+        return float(np.median(ordered[: split + 1]))
+    return float(np.median(ordered))
+
+
+def drop_above_local_surface(
+    points: np.ndarray,
+    z: np.ndarray,
+    along: np.ndarray,
+    max_above_m: float,
+    bin_m: float = 0.04,
+) -> np.ndarray:
+    """
+    断面に沿った各地点の地表面より max_above_m 以上高い点を除く。
+
+    計測器がビンの過半数でも、地表面との隙間が max_above_m より大きければ下側を地表面にする。
+    面からの距離では落ちない。
+    """
+    if len(points) == 0:
+        return points
+    z = np.asarray(z, dtype=float)
+    along = np.asarray(along, dtype=float)
+    a_min = float(np.min(along))
+    a_max = float(np.max(along))
+    if not np.isfinite(a_min) or a_max - a_min < bin_m:
+        med = _local_surface_height(z, max_above_m)
+        if not np.isfinite(med):
+            med = float(np.median(z))
+        return points[z <= med + max_above_m]
+
+    n_bins = int(np.floor((a_max - a_min) / bin_m + 1e-9)) + 1
+    idx = np.clip(((along - a_min) / bin_m).astype(int), 0, n_bins - 1)
+    medians = np.full(n_bins, np.nan)
+    for i in range(n_bins):
+        chosen = z[idx == i]
+        if len(chosen) >= 3:
+            medians[i] = _local_surface_height(chosen, max_above_m)
+    valid = np.flatnonzero(np.isfinite(medians))
+    if len(valid) == 0:
+        med = float(np.median(z))
+        return points[z <= med + max_above_m]
+    for i in range(n_bins):
+        if not np.isfinite(medians[i]):
+            medians[i] = medians[valid[np.argmin(np.abs(valid - i))]]
+    original = medians.copy()
+    for i in range(n_bins):
+        neighbors = []
+        if i > 0:
+            neighbors.append(original[i - 1])
+        if i + 1 < n_bins:
+            neighbors.append(original[i + 1])
+        if neighbors and original[i] > max(neighbors) + max_above_m:
+            medians[i] = min(neighbors)
+    return points[z <= medians[idx] + max_above_m]
 
 
 def extract_cross_section_by_plane(

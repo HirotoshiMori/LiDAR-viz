@@ -62,7 +62,7 @@ def plot_section_differences(
             (y_min, y_max)。Noneの場合は `ylim_displacement` と同じ設定を使用
         graph_size_ratio: 各グラフのサイズの縦横比 (width, height)。Noneの場合は自動設定。例: (4, 6)で横:縦=4:6
         title_prefix: グラフタイトルの先頭に付与するプレフィックス（例: フォルダ名）。空文字列の場合は付与しない
-        x_zero_zoom: ZoomグラフのX軸ゼロ点（mm、point1からの距離）。指定時は護岸断面交点をゼロとして表示。Noneの場合は従来どおり
+        x_zero_zoom: ZoomグラフのX軸ゼロ点（mm、point1からの距離）。指定時は変曲点をゼロとして表示。Noneの場合は従来どおり
         
     Returns:
         matplotlib Figureオブジェクトのリスト（等間隔処理前、フィルター適用前、全域の計測値、
@@ -229,7 +229,7 @@ def plot_section_differences(
     if show_zoom and xlim_zoom is not None:
         # 特定区間のX軸範囲を計算
         if x_zero_zoom is not None:
-            # 護岸断面交点をゼロ点とする（x_zero_zoom = point1からの距離 mm）
+            # 変曲点をゼロ点とする（x_zero_zoom = point1からの距離 mm）
             plot_x_zoom = all_common_x - x_zero_zoom
             xlim_zoom_final = (xlim_zoom[0] - x_zero_zoom, xlim_zoom[1] - x_zero_zoom)
         elif x_start_from_zero:
@@ -271,7 +271,7 @@ def plot_section_differences(
             plt.tight_layout()
             figures.append(fig_displacement_zoom)
 
-        # 差分のグラフ（特定区間）
+        # 差分のグラフ（特定区間）。0点は計測値の Zoom と同じ変曲点。
         yz = ylim_difference_zoom if ylim_difference_zoom is not None else (np.nanmin(np.concatenate(all_differences)), np.nanmax(np.concatenate(all_differences)))
         fw, fh = figsize_for_aspect(xlim_zoom_final[1] - xlim_zoom_final[0], yz[1] - yz[0])
         fig_difference_zoom = plt.figure(figsize=(fw, fh))
@@ -315,6 +315,8 @@ def plot_initial_section_with_lines(
     font_legend: float = 8,
     line_width_main: float = 2,
     line_width_aux: float = 1,
+    inflection_original: Optional[np.ndarray] = None,
+    inflection_rotated: Optional[np.ndarray] = None,
 ) -> plt.Figure:
     """
     初期断面の点群を可視化し、断面直線と新しいZ軸方向（地面平面の法線）を重ねて表示する。
@@ -493,6 +495,12 @@ def plot_initial_section_with_lines(
         ax_xy_orig.plot(z_axis_x, z_axis_y, 'g--', linewidth=line_width_main, label='New Z-axis (ground normal)')
     ax_xy_orig.plot(point1[0], point1[1], 'bo', markersize=10, label='Point 1')
     ax_xy_orig.plot(point2[0], point2[1], 'bs', markersize=10, label='Point 2')
+    if inflection_original is not None:
+        ax_xy_orig.plot(
+            inflection_original[0], inflection_original[1],
+            marker='o', color='orange', markeredgecolor='k', markersize=9,
+            linestyle='None', zorder=5, label='Inflection',
+        )
     ax_xy_orig.set_xlabel('X (m)')
     ax_xy_orig.set_ylabel('Y (m)')
     ax_xy_orig.set_title('XY Plane (Original Coordinate)')
@@ -539,6 +547,12 @@ def plot_initial_section_with_lines(
         ax_yz_orig.plot(z_axis_y_coords, z_axis_z_coords, 'g--', linewidth=line_width_main, label='New Z-axis (ground normal)')
     ax_yz_orig.plot(point1[1], point1[2], 'bo', markersize=10, label='Point 1')
     ax_yz_orig.plot(point2[1], point2[2], 'bs', markersize=10, label='Point 2')
+    if inflection_original is not None:
+        ax_yz_orig.plot(
+            inflection_original[1], inflection_original[2],
+            marker='o', color='orange', markeredgecolor='k', markersize=9,
+            linestyle='None', zorder=5, label='Inflection',
+        )
     ax_yz_orig.set_xlabel('Y (m)')
     ax_yz_orig.set_ylabel('Z (m)')
     ax_yz_orig.set_title('YZ Plane (Original Coordinate)')
@@ -584,6 +598,12 @@ def plot_initial_section_with_lines(
         ax_xz_orig.plot(z_axis_x_coords, z_axis_z_coords, 'g--', linewidth=line_width_main, label='New Z-axis (ground normal)')
     ax_xz_orig.plot(point1[0], point1[2], 'bo', markersize=10, label='Point 1')
     ax_xz_orig.plot(point2[0], point2[2], 'bs', markersize=10, label='Point 2')
+    if inflection_original is not None:
+        ax_xz_orig.plot(
+            inflection_original[0], inflection_original[2],
+            marker='o', color='orange', markeredgecolor='k', markersize=9,
+            linestyle='None', zorder=5, label='Inflection',
+        )
     ax_xz_orig.set_xlabel('X (m)')
     ax_xz_orig.set_ylabel('Z (m)')
     ax_xz_orig.set_title('XZ Plane (Original Coordinate)')
@@ -628,6 +648,12 @@ def plot_initial_section_with_lines(
     ax_xy_new.plot(mid_point_new[0], mid_point_new[1], 'go', markersize=10, label='Z-axis (vertical)')
     ax_xy_new.plot(point1_rotated[0], point1_rotated[1], 'bo', markersize=10, label='Point 1')
     ax_xy_new.plot(point2_rotated[0], point2_rotated[1], 'bs', markersize=10, label='Point 2')
+    if inflection_rotated is not None:
+        ax_xy_new.plot(
+            inflection_rotated[0], inflection_rotated[1],
+            marker='o', color='orange', markeredgecolor='k', markersize=9,
+            linestyle='None', zorder=5, label='Inflection',
+        )
     ax_xy_new.set_xlabel('X (m)')
     ax_xy_new.set_ylabel('Y (m)')
     ax_xy_new.set_title('XY Plane (New XYZ Axis)')
@@ -662,6 +688,12 @@ def plot_initial_section_with_lines(
             ax_yz_new.plot(z_range_y, z_range_z, 'm--', linewidth=line_width_aux, alpha=0.5)
     ax_yz_new.plot(point1_rotated[1], point1_rotated[2], 'bo', markersize=10, label='Point 1')
     ax_yz_new.plot(point2_rotated[1], point2_rotated[2], 'bs', markersize=10, label='Point 2')
+    if inflection_rotated is not None:
+        ax_yz_new.plot(
+            inflection_rotated[1], inflection_rotated[2],
+            marker='o', color='orange', markeredgecolor='k', markersize=9,
+            linestyle='None', zorder=5, label='Inflection',
+        )
     ax_yz_new.set_xlabel('Y (m)')
     ax_yz_new.set_ylabel('Z (m)')
     ax_yz_new.set_title('YZ Plane (New XYZ Axis)')
@@ -696,6 +728,12 @@ def plot_initial_section_with_lines(
             ax_xz_new.plot(z_range_x, z_range_z, 'm--', linewidth=line_width_aux, alpha=0.5)
     ax_xz_new.plot(point1_rotated[0], point1_rotated[2], 'bo', markersize=10, label='Point 1')
     ax_xz_new.plot(point2_rotated[0], point2_rotated[2], 'bs', markersize=10, label='Point 2')
+    if inflection_rotated is not None:
+        ax_xz_new.plot(
+            inflection_rotated[0], inflection_rotated[2],
+            marker='o', color='orange', markeredgecolor='k', markersize=9,
+            linestyle='None', zorder=5, label='Inflection',
+        )
     ax_xz_new.set_xlabel('X (m)')
     ax_xz_new.set_ylabel('Z (m)')
     ax_xz_new.set_title('XZ Plane (New XYZ Axis)')

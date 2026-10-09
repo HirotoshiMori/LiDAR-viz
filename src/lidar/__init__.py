@@ -5,7 +5,6 @@ from .io_ply import load_point_cloud, natural_sort_paths
 from .geometry import (
     distance_to_line,
     project_to_line,
-    revetment_intersection_distance_mm,
     extract_cross_section,
     extract_cross_section_by_plane,
 )
@@ -27,7 +26,6 @@ __all__ = [
     "natural_sort_paths",
     "distance_to_line",
     "project_to_line",
-    "revetment_intersection_distance_mm",
     "extract_cross_section",
     "extract_cross_section_by_plane",
     "estimate_ground_plane",

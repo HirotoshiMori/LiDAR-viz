@@ -32,9 +32,11 @@ def resample_to_uniform_grid(
     if dx <= 0:
         raise ValueError(f"無効なグリッド間隔: dx={dx}")
     
-    # 等間隔グリッドを作成
+    # 等間隔グリッドを [x_min, x_max] に収める。
+    # arange(x_min, x_max + dx, dx) は丸めではみ出し、端が NaN になる。
     x_min, x_max = np.nanmin(x), np.nanmax(x)
-    x_uniform = np.arange(x_min, x_max + dx, dx)
+    n_steps = int(np.floor((x_max - x_min) / dx + 1e-9)) + 1
+    x_uniform = x_min + np.arange(n_steps) * dx
     
     # 補間
     f = interpolate.interp1d(

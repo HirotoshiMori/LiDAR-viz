@@ -32,6 +32,9 @@ dist/
 build/
 *.so
 
+# ===== Matplotlib =====
+.mplconfig/
+
 # ===== Virtual environment / uv =====
 .venv/
 venv/

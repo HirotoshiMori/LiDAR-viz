@@ -3,6 +3,8 @@
 import numpy as np
 from typing import Tuple
 
+from scipy.signal import savgol_filter
+
 from .geometry import project_to_line
 
 
@@ -43,6 +45,50 @@ def create_profile(
     z_mm = cross_section_points_rotated[:, 2] * 1000.0
     
     return x_mm, z_mm
+
+
+def prominent_inflection_x_mm(
+    x_mm: np.ndarray,
+    z_mm: np.ndarray,
+    *,
+    y_increases_with_x: bool,
+    slope_window_mm: float = 20.0,
+    min_angle_deg: float = 45.0,
+) -> float | None:
+    """断面の Y が負の側から見て、勾配角が最初に min_angle_deg 以上変わる位置を返す。
+
+    x は point1 から point2 への断面距離（mm）。走査は Y の負側から正側へ進む。
+    勾配角は arctan(dz/dx) で、前後 slope_window_mm の差を見る。
+    """
+    x = np.asarray(x_mm, dtype=float)
+    z = np.asarray(z_mm, dtype=float)
+    finite = np.isfinite(x) & np.isfinite(z)
+    if int(finite.sum()) < 15:
+        return None
+    z_fill = z.copy()
+    if not bool(finite.all()):
+        z_fill[~finite] = np.interp(x[~finite], x[finite], z[finite])
+    dx = float(np.median(np.diff(x)))
+    if not np.isfinite(dx) or dx <= 0:
+        return None
+    n = len(z_fill)
+    win = min(31, n if n % 2 == 1 else n - 1)
+    if win < 7:
+        return None
+    slope = savgol_filter(z_fill, win, 3, deriv=1, delta=dx)
+    theta = np.degrees(np.arctan(slope))
+    half = max(1, int(round(slope_window_mm / dx)))
+    if 2 * half >= n:
+        return None
+    order = range(half, n - half) if y_increases_with_x else range(n - half - 1, half - 1, -1)
+    for i in order:
+        if not finite[i]:
+            continue
+        behind = i - half if y_increases_with_x else i + half
+        ahead = i + half if y_increases_with_x else i - half
+        if abs(float(theta[ahead] - theta[behind])) >= min_angle_deg:
+            return float(x[i])
+    return None
 
 
 def clip_profile_indices(

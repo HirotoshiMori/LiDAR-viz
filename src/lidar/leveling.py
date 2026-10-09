@@ -67,10 +67,15 @@ def estimate_ground_plane(
     ransac_n: int = 3,
     num_iterations: int = 1000,
     z_range: Optional[Tuple[float, float]] = None,
-    xy_range: Optional[Tuple[Tuple[float, float], Tuple[float, float]]] = None
+    xy_range: Optional[Tuple[Tuple[float, float], Tuple[float, float]]] = None,
+    max_tilt_deg: float = 12.0,
+    seed: Optional[int] = 0,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    RANSAC平面推定で地面平面を抽出する。
+    RANSAC平面推定で床平面を抽出する。
+
+    LiDAR と土槽の位置関係はほぼ一定で、ケースごとのずれは小さい。
+    そのため法線が鉛直から max_tilt_deg を超える面（壁など）は床にしない。
     
     Args:
         points: N×3の点群配列
@@ -79,6 +84,8 @@ def estimate_ground_plane(
         num_iterations: RANSACの反復回数（デフォルト: 1000）
         z_range: Z座標の範囲フィルタ (min_z, max_z)。Noneの場合はフィルタなし
         xy_range: XY座標の範囲フィルタ ((min_x, max_x), (min_y, max_y))。Noneの場合はフィルタなし
+        max_tilt_deg: 鉛直から許す最大傾斜（度）。これより寝た面は棄却する
+        seed: 乱数の種。None の場合は非決定的
         
     Returns:
         (plane_normal, plane_point, ground_mask): 
@@ -91,13 +98,17 @@ def estimate_ground_plane(
     """
     if len(points) == 0:
         raise ValueError("点群が空です")
+    if not 0 < max_tilt_deg <= 70:
+        raise ValueError(f"max_tilt_deg ({max_tilt_deg}) は 0 より大きく 70 以下である必要があります")
 
     filtered_points, roi_mask = _apply_roi_filter(points, z_range, xy_range)
     if len(filtered_points) < 3:
         raise ValueError(f"ROIフィルタ後の点が不足しています（{len(filtered_points)}点）")
+
+    min_normal_z = float(np.cos(np.deg2rad(max_tilt_deg)))
     
-    # RANSAC平面推定（numpy のみで実装）
-    rng = np.random.default_rng()
+    # RANSAC平面推定（numpy のみで実装）。床らしい傾きの候補だけを残す。
+    rng = np.random.default_rng(seed)
     n_pts = len(filtered_points)
     best_inliers = np.array([], dtype=np.intp)
     best_normal = np.array([0.0, 0.0, 1.0])
@@ -109,6 +120,8 @@ def estimate_ground_plane(
         if len(sample) < 3:
             continue
         normal, d = _fit_plane_from_points(sample)
+        if abs(float(normal[2])) < min_normal_z:
+            continue
         inliers = _count_inliers(
             filtered_points, normal, d, distance_threshold
         )
@@ -118,7 +131,10 @@ def estimate_ground_plane(
             best_d = d
 
     if len(best_inliers) == 0:
-        raise ValueError("平面推定に失敗しました（インライアが0点）")
+        raise ValueError(
+            "平面推定に失敗しました"
+            f"（鉛直から {max_tilt_deg}° 以内の床面がありません）"
+        )
 
     plane_normal = best_normal.copy()
     plane_d = best_d

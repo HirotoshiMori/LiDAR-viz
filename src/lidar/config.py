@@ -35,8 +35,9 @@ def _resolve_config(raw: dict) -> dict:
     # points -> numpy array
     if "points" in cfg:
         pts = cfg["points"]
-        for k in ("point1", "point2", "revetment"):
-            if k in pts:
+        pts.pop("revetment", None)
+        for k in ("point1", "point2"):
+            if k in pts and pts[k] is not None:
                 pts[k] = np.array(pts[k], dtype=float)
 
     # cross_section.z_range
@@ -56,6 +57,7 @@ def _resolve_config(raw: dict) -> dict:
 
     # plot の範囲類
     if "plot" in cfg:
+        cfg["plot"].pop("revetment_shift_mm", None)
         for k in ("xlim", "ylim_displacement", "ylim_difference",
                   "ylim_difference_zoom", "ylim_displacement_zoom", "graph_size_ratio"):
             if cfg["plot"].get(k) is not None:
@@ -74,8 +76,8 @@ def validate_config(cfg: dict) -> None:
     """パラメータの正当性を検証。不正な場合は ValueError を送出。"""
     # points 必須
     pts = cfg.get("points", {})
-    if not all(k in pts for k in ("point1", "point2", "revetment")):
-        raise ValueError("points に point1, point2, revetment が必要です")
+    if not all(k in pts for k in ("point1", "point2")):
+        raise ValueError("points に point1, point2 が必要です")
 
     # common_grid
     cg = cfg.get("common_grid", {})
@@ -113,6 +115,29 @@ def validate_config(cfg: dict) -> None:
         raise ValueError(
             f"cross_section.end_index_max ({end_idx}) は start_index ({start_idx}) より大きい必要があります"
         )
+    max_above = cs.get("max_above_surface_m")
+    if max_above is not None and (
+        isinstance(max_above, bool)
+        or not isinstance(max_above, (int, float))
+        or float(max_above) <= 0
+    ):
+        raise ValueError(
+            f"cross_section.max_above_surface_m ({max_above}) は正の数である必要があります"
+        )
+
+    grd = cfg.get("ground", {})
+    max_tilt_deg = grd.get("max_tilt_deg", 12.0)
+    if (
+        isinstance(max_tilt_deg, bool)
+        or not isinstance(max_tilt_deg, (int, float))
+        or not 0 < float(max_tilt_deg) <= 70
+    ):
+        raise ValueError(
+            f"ground.max_tilt_deg ({max_tilt_deg}) は 0 より大きく 70 以下である必要があります"
+        )
+    seed = cfg.get("seed", 0)
+    if seed is not None and (isinstance(seed, bool) or not isinstance(seed, int) or seed < 0):
+        raise ValueError(f"seed ({seed}) は 0 以上の整数である必要があります")
 
     # plot.figure / font / line（省略可、指定時は正の値）
     plot = cfg.get("plot", {})
@@ -131,6 +156,11 @@ def validate_config(cfg: dict) -> None:
             for k in ("main", "aux", "data"):
                 if block.get(k) is not None and block[k] <= 0:
                     raise ValueError(f"plot.line.{k} は正の値である必要があります")
+    inflection_shift = plot.get("inflection_shift_mm", 0)
+    if isinstance(inflection_shift, bool) or not isinstance(inflection_shift, (int, float)):
+        raise ValueError(
+            f"plot.inflection_shift_mm ({inflection_shift}) は数値である必要があります"
+        )
 
 
 def load_config(
@@ -178,7 +208,7 @@ def load_config(
     # points が無い場合は データセット yaml 必須
     if "points" not in config or not config["points"]:
         raise FileNotFoundError(
-            f"points が定義されていません。{dataset_path} に point1, point2, revetment を定義してください"
+            f"points が定義されていません。{dataset_path} に point1, point2 を定義してください"
         )
 
     config = _resolve_config(config)
@@ -225,7 +255,7 @@ def load_config_from_params_path(
 
     if "points" not in config or not config["points"]:
         raise FileNotFoundError(
-            f"points が定義されていません。{params_path} に point1, point2, revetment を定義してください"
+            f"points が定義されていません。{params_path} に point1, point2 を定義してください"
         )
 
     case_id = config.get("case_id") or params_path.stem
